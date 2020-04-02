@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"  xmlns:th="http://www.thymeleaf.org"><head>
+    <meta charset="UTF-8">
+    <title>Registration</title>
+</head>
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="/style.css" >
+
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <h1 class="navbar-brand">Register</h1>
+</nav>
+<div class="container-fluid col-m-6 col-xl-6 col-xs-12" style="padding: 50px">
+
+
+    <form th:action="@{/register}" th:object="${command}" method="post">
+        <div class="form-group">
+            <label for="inputName">Username</label>
+            <input type="text" class="form-control" id="inputName"  th:field="*{name}" th:text="${name}">
+            <span class="error small" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span>
+        </div>
+        <div class="form-group">
+            <label for="inputEmail">Email address</label>
+            <input type="email" class="form-control" id="inputEmail" aria-describedby="emailHelp" th:field="*{email}" th:text="${email}">
+            <span class="error small" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></span>
+        </div>
+        <div class="form-group">
+            <label for="inputPassword1">Password</label>
+            <input type="password" class="form-control" id="inputPassword1" th:field="*{password1}" th:value="${password1}">
+            <span class="error small" th:if="${#fields.hasErrors('password1')}" th:errors="*{password1}"></span>
+
+        </div>
+        <div class="form-group">
+            <label for="inputPassword2">Repeat Password</label>
+            <input type="password" class="form-control" id="inputPassword2"  th:field="*{password2}" th:value="${password2}">
+            <span class="error small" th:if="${#fields.hasErrors('password2')}" th:errors="*{password2}"></span>
+        </div>
+        <div class="form-group form-check">
+            <input type="checkbox" class="form-check-input" id="exampleCheck1"  th:field="*{privacy}" th:value="${privacy}">
+            <label class="form-check-label" for="exampleCheck1">Privacy</label>
+            <span class="error small" th:if="${#fields.hasErrors('privacy')}" th:errors="*{privacy}"></span>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+        <!--div class="alert alert-danger mt-3 p-2" th:if="${#fields.hasAnyErrors()}">
+            <ul class="mb-0"  >
+                <li th:each="e: ${#fields.allDetailedErrors()}">
+                    <span th:text="${e.message}">The error message</span>
+                </li>
+            </ul>
+        </div-->
+    </form>
+
+
+</div>
+
+</body>
+</html>
