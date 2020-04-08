@@ -29,7 +29,7 @@ public class HomeController {
     }
 
     @GetMapping("/")
-    public String home() {
+    public String home(@ModelAttribute("message") String message, Model m) {
         return "home";
     }
 
@@ -50,28 +50,31 @@ public class HomeController {
             HttpSession session
     ) {
         log.info("-------> richiesto login " + command.toString());
-        if(session.getAttribute("username")!= null){
+        // check username sesssion attribute
+        if (session.getAttribute("username") != null) {
             return "redirect:/";
         }
+        // check form error
         if (bindingResult.hasErrors()) {
             log.info("----- errori nel form di login");
             bindingResult.getAllErrors().forEach(error -> log.info("---" + error.getDefaultMessage()));
             return "login";
         }
-
-        if (!this.registrationManager.containsKey(command.name)) {
-            log.info("----- user " + command.name + " not exist");
-            bindingResult.addError(new ObjectError("error","user not exist"));
+        // check user existence
+        if (!this.registrationManager.containsKey(command.getEmail())) {
+            log.info("----- user " + command.getEmail() + " not exist");
+            bindingResult.addError(new ObjectError("error", "user not exist"));
             return "login";
         }
-        RegistrationDetails rd = this.registrationManager.get(command.name);
+        RegistrationDetails rd = this.registrationManager.get(command.getEmail());
+        // check password
         if (command.getPassword().equals(rd.getPassword1())) { // password uguali -> next fare l hash
-            log.info("----- user " + command.name + " LOGGED");
-            session.setAttribute("username",command.name);
+            log.info("----- user " + command.getEmail() + " LOGGED");
+            session.setAttribute("username", command.getEmail());
             return "redirect:/private";
         } else {
-            log.info("----- user " + command.name + " WRONG PASSWORD INSERT");
-            bindingResult.addError(new ObjectError("error","access not allowed"));
+            log.info("----- user " + command.getEmail() + " WRONG PASSWORD INSERT");
+            bindingResult.addError(new ObjectError("error", "access not allowed"));
             return "login";
         }
 
@@ -85,13 +88,14 @@ public class HomeController {
         }
         log.info("-------> richiesta pagina registrazione " + command.toString());
 
-        return "register.html";
+        return "register";
     }
 
     @PostMapping("/register")
     public String register(
             @Valid @ModelAttribute("command") RegistrationCommand command,
-            BindingResult bindingResult
+            BindingResult bindingResult,
+            RedirectAttributes ra
     ) {
         log.info("-------> richiesta registrazione " + command.toString());
         if (!command.getPassword1().equals(command.getPassword2())) {
@@ -100,24 +104,25 @@ public class HomeController {
         if (bindingResult.hasErrors()) {
             log.info("----- errori nel form");
             bindingResult.getAllErrors().forEach(error -> log.info("---" + error.getDefaultMessage()));
-            return "register.html";
+            return "register";
         }
 
         RegistrationDetails details = RegistrationDetails.builder()
-                .email(command.getEmail())
+                .email(command.getEmail().toLowerCase())
                 .name(command.getName())
-                .privacy(command.privacy)
+                .privacy(command.isPrivacy())
                 .password1(command.getPassword1()) // next hash this password
                 .registrationDate(new Date()).build();
 
 
-        if (this.registrationManager.putIfAbsent(command.getName(), details) == null) {
+        if (this.registrationManager.putIfAbsent(details.getEmail(), details) == null) {
             log.info("registrazione avvenuta con successo " + details.toString());
+            ra.addFlashAttribute("message", "Account created!");
             return "redirect:/"; // success
 
         } else {
             // add user already exist error and return to register
-            FieldError error = new FieldError("nameExist", "name", "Username " + command.getName().toString() + " already exist");
+            FieldError error = new FieldError("mailExist", "email", "Email " + details.getEmail() + " already taken");
             bindingResult.addError(error);
             return "register";
         }
