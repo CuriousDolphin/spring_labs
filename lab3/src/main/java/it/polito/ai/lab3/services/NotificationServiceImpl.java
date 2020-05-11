@@ -4,23 +4,25 @@ import it.polito.ai.lab3.controllers.NotificationController;
 import it.polito.ai.lab3.dtos.TeamDTO;
 import it.polito.ai.lab3.entities.Token;
 import it.polito.ai.lab3.exceptions.TokenNotFoundException;
+import it.polito.ai.lab3.repositories.TeamRepository;
 import it.polito.ai.lab3.repositories.TokenRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.sql.Timestamp;
-import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 
 @Service
 @Transactional
+@EnableScheduling
 public class NotificationServiceImpl implements NotificationService{
     @Autowired
     public JavaMailSender emailSender;
@@ -30,6 +32,43 @@ public class NotificationServiceImpl implements NotificationService{
 
     @Autowired
     TokenRepository tokenRepository;
+
+    @Autowired
+    TeamRepository teamRepository;
+    @Scheduled(fixedRate = 1000*60*60) // every hour
+    public void cleanToken() {
+
+        Timestamp t = new Timestamp(System.currentTimeMillis());
+        System.out.println("SCHEDULED TASK "+t);
+        List<Token> expired=tokenRepository.findAllByExpiryBefore(t);
+        System.out.println("FOUNDED  "+expired.size()+" EXPIRED TOKEN");
+
+        ArrayList<Long> teamsId = new ArrayList<Long>();
+
+        expired.forEach(token ->{
+            teamsId.add(token.getTeamId());
+            tokenRepository.delete(token);
+        });
+
+        for (Long id:teamsId){
+            try{
+                if(teamRepository.existsById(id)){
+                    teamRepository.deleteById(id);
+                    System.out.println("Eliminato team "+id);
+                }
+
+
+            }catch(Exception e){
+                System.out.println("Errore nel rimuovere il team "+e.toString());
+                continue;
+            }
+
+
+
+        }
+
+
+    }
 
 
     public void sendMessage(String address, String subject, String body){

@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -39,7 +40,7 @@ public class TeamServiceImpl implements TeamService {
 
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
+
     public boolean addCourse(CourseDTO course) {
         if (courseRepository.existsById(course.getName())) {
             return false;
@@ -57,11 +58,11 @@ public class TeamServiceImpl implements TeamService {
     public Optional<CourseDTO> getCourse(String name) {
         if (!courseRepository.existsById(name)) throw new CourseNotFoundException();
 
-       Course course =  courseRepository.findById(name).get();
-       System.out.println("GET COURSE "+course.getName());
+        Course course = courseRepository.findByNameIgnoreCase(name).get();
+        System.out.println("GET COURSE " + course.getName());
         return courseRepository
-                .findById(name)
-                .map(cours -> modelMapper.map(cours, CourseDTO.class));
+                .findByNameIgnoreCase(name)
+                .map(course1 -> modelMapper.map(course1, CourseDTO.class));
 
 
     }
@@ -75,7 +76,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
+
     public boolean addStudent(StudentDTO student) {
 
         if (studentRepository.existsById(student.getId())) {
@@ -88,8 +89,7 @@ public class TeamServiceImpl implements TeamService {
 
     @Override
     public Optional<StudentDTO> getStudent(String studentId) {
-        studentId=studentId.toUpperCase();
-        return studentRepository.findById(studentId)
+        return studentRepository.findByIdIgnoreCase(studentId)
                 .map(student -> modelMapper.map(student, StudentDTO.class));
     }
 
@@ -103,12 +103,11 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
     public List<StudentDTO> getEnrolledStudents(String courseName) {
         if (!courseRepository.existsById(courseName)) throw new CourseNotFoundException();
         return courseRepository
-                .findById(courseName)
-                .get()
+                //.findById(courseName)
+                .findByNameIgnoreCase(courseName).get()
                 .getStudents()
                 .stream()
                 .map(student -> modelMapper.map(student, StudentDTO.class))
@@ -116,43 +115,40 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
     public boolean addStudentToCourse(String studentId, String courseName) {
 
         if (!studentRepository.existsById(studentId)) throw new StudentNotFoundException();
         if (!courseRepository.existsById(courseName)) throw new CourseNotFoundException();
-        if (courseRepository.getOne(courseName).getStudents().contains(studentRepository.getOne(studentId)))
+        if (courseRepository.findByNameIgnoreCase(courseName).get().getStudents().contains(studentRepository.findByIdIgnoreCase(studentId).get()))
             return false;
 
-        Course c =courseRepository.findById(courseName).get();
-        System.out.println("ADD STUDENT TO COURSE "+c.toString());
-
-                c.addStudent(
-                        studentRepository.findById(studentId).get()
-                );
+        Course c = courseRepository.findByNameIgnoreCase(courseName).get();
+        System.out.println("ADD STUDENT TO COURSE " + c.getName());
+        Student s = studentRepository.findByIdIgnoreCase(studentId).get();
+        System.out.println("ADD STUDENT TO COURSE STUDENT" + s.getId());
+        c.addStudent(
+                s
+        );
 
         return true;
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
     public void enableCourse(String courseName) {
 
         if (!courseRepository.existsById(courseName)) throw new CourseNotFoundException();
-        courseRepository.getOne(courseName).setEnabled(true);
+        courseRepository.findByNameIgnoreCase(courseName).get().setEnabled(true);
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
     public void disableCourse(String courseName) {
 
         if (!courseRepository.existsById(courseName)) throw new CourseNotFoundException();
-        courseRepository.getOne(courseName).setEnabled(false);
+        courseRepository.findByNameIgnoreCase(courseName).get().setEnabled(false);
 
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
     public List<Boolean> addAll(List<StudentDTO> students) {
         List<Boolean> ris = new ArrayList<>();
         students.forEach(studentDTO -> {
@@ -162,7 +158,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
+
     public List<Boolean> enrollAll(List<String> studentIds, String courseName) {
 
         if (!courseRepository.existsById(courseName)) throw new CourseNotFoundException();
@@ -179,7 +175,7 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @PreAuthorize("hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
+
     public List<Boolean> addAndEnroll(Reader r, String courseName) {
         if (!courseRepository.existsById(courseName)) throw new CourseNotFoundException();
         /* create csv bean reader */
@@ -208,11 +204,11 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    // assumo che l'username del principal sia l'id dello studente
-    @PreAuthorize("(#studentId == authentication.principal.username and hasRole('ROLE_STUDENT')) or hasRole('ROLE_ADMIN')")
+
     public List<CourseDTO> getCourses(String studentId) {
         if (!studentRepository.existsById(studentId)) throw new StudentNotFoundException();
-        return this.studentRepository.getOne(studentId)
+        return this.studentRepository.findByIdIgnoreCase(studentId)
+                .get()
                 .getCourses()
                 .stream()
                 .map(course -> modelMapper.map(course, CourseDTO.class))
@@ -220,10 +216,11 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @PreAuthorize(" hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF')")
+
     public List<TeamDTO> getTeamsForStudent(String studentId) {
         if (!studentRepository.existsById(studentId)) throw new StudentNotFoundException();
-        return this.studentRepository.getOne(studentId)
+        return this.studentRepository.findByIdIgnoreCase(studentId)
+                .get()
                 .getTeams()
                 .stream()
                 .map(team -> modelMapper.map(team, TeamDTO.class))
@@ -241,14 +238,14 @@ public class TeamServiceImpl implements TeamService {
     }
 
     @Override
-    @PreAuthorize(" hasRole('ROLE_ADMIN') or hasRole('ROLE_STUDENT')")
+
     public TeamDTO proposeTeam(String courseId, String name, List<String> memberIds) {
         // check esistenza corso
         if (!courseRepository.existsById(courseId))
             throw new CourseNotFoundException();
 
         // course enabled
-        Course course = courseRepository.getOne(courseId);
+        Course course = courseRepository.findByNameIgnoreCase(courseId).get();
         if (!course.isEnabled())
             throw new CourseNotEnabled();
 
@@ -263,7 +260,7 @@ public class TeamServiceImpl implements TeamService {
                     if (!studentRepository.existsById(studentId))
                         throw new StudentNotFoundException();
 
-                    Student s = studentRepository.getOne(studentId);
+                    Student s = studentRepository.findByIdIgnoreCase(studentId).get();
 
                     // check studente iscritto al corso
                     if (!s.getCourses().contains(course))
@@ -293,7 +290,7 @@ public class TeamServiceImpl implements TeamService {
 
         memberIds.forEach(
                 s -> {
-                    newTeam.addMembers(studentRepository.getOne(s));
+                    newTeam.addMembers(studentRepository.findByIdIgnoreCase(s).get());
                 }
         );
 
@@ -302,22 +299,24 @@ public class TeamServiceImpl implements TeamService {
         return modelMapper.map(newTeam, TeamDTO.class);
     }
 
-    @PreAuthorize(" hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF') or hasRole('ROLE_STUDENT')")
+
     @Override
     public List<TeamDTO> getTeamForCourse(String courseName) {
         // check esistenza corso
         if (!courseRepository.existsById(courseName))
             throw new CourseNotFoundException();
 
-        return courseRepository.getOne(courseName)
+        return courseRepository.findByNameIgnoreCase(courseName)
+                .get()
                 .getTeams()
                 .stream()
                 .map(team -> modelMapper.map(team, TeamDTO.class))
                 .collect(Collectors.toList());
 
     }
+
     @Override
-    @PreAuthorize(" hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF') or hasRole('ROLE_STUDENT')")
+
     public List<StudentDTO> getStudentsInTeams(String courseName) {
         if (!courseRepository.existsById(courseName))
             throw new CourseNotFoundException();
@@ -327,8 +326,8 @@ public class TeamServiceImpl implements TeamService {
                 .map(student -> modelMapper.map(student, StudentDTO.class))
                 .collect(Collectors.toList());
     }
+
     @Override
-    @PreAuthorize(" hasRole('ROLE_ADMIN') or hasRole('ROLE_PROF') or hasRole('ROLE_STUDENT')")
     public List<StudentDTO> getAvailableStudents(String courseName) {
         if (!courseRepository.existsById(courseName))
             throw new CourseNotFoundException();
@@ -339,16 +338,19 @@ public class TeamServiceImpl implements TeamService {
                 .collect(Collectors.toList());
 
     }
+
     @Override
     public void activateTeam(Long teamId) {
         if (!teamRepository.existsById(teamId)) throw new TeamNotFoundException();
         teamRepository.getOne(teamId).setStatus(1);
     }
+
     @Override
     public void evictTeam(Long teamId) {
-        System.out.println("GOING TO EVICT "+teamId.toString());
+        System.out.println("GOING TO EVICT " + teamId.toString());
         if (!teamRepository.existsById(teamId)) throw new TeamNotFoundException();
-        Team t=teamRepository.getOne(teamId);
+        Team t = teamRepository.getOne(teamId);
         teamRepository.delete(t);
+        ///teamRepository.deleteById(teamId);
     }
 }

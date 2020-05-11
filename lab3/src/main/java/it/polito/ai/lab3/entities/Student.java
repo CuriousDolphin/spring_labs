@@ -51,10 +51,6 @@ public class Student {
         if(t.getMembers().contains(this))  t.removeMembers(this);
     }
 
-    public String getId(){
-        System.out.println("GET STUDENT ID"+this.id.toUpperCase());
-        return this.id.toUpperCase();
-    }
     public void setId(String id){
         System.out.println("SET STUDENT ID"+this.id.toUpperCase());
         this.id=id.toUpperCase();

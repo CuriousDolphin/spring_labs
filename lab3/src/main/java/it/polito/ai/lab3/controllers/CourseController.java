@@ -173,7 +173,7 @@ public class CourseController {
     void updateCourse(@RequestBody @Valid Map<String, Boolean> input, @PathVariable("name") String courseName) {
         if (!input.containsKey("enabled")) throw new ResponseStatusException(HttpStatus.CONFLICT);
         try {
-            if(input.get("enabled")){
+            if(input.get("enabled")==true){
                 teamService.enableCourse(courseName);
             }else{
                 teamService.disableCourse(courseName);
